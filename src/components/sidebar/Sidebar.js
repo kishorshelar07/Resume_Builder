@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./Sidebar.css"; // Make sure this file is correct
 import UserForm from "../user/Form";
+import ResumeForm from "../resume_details/ResumeForm";
 function Sidebar() {
   // State to toggle the sidebar visibility
   const [isSidebarActive, setIsSidebarActive] = useState(false);
@@ -39,7 +40,7 @@ function Sidebar() {
             </a>
           </li>
           <li>
-            <a href="#" >
+            <a href="#" onClick={() => handlePageSelection("resumeDetails")}>
               Resume Details
             </a>
           </li>
@@ -92,6 +93,7 @@ function Sidebar() {
 
         {/* Conditionally render the selected page */}
         {selectedPage === "userDetails" && <UserForm />}
+        {selectedPage === "resumeDetails" && <ResumeForm />}
         {selectedPage === "home" && <h3>Welcome To Dashboard</h3>}
         {/* You can add similar conditions for other pages like 'resumeDetails' */}
       </div>

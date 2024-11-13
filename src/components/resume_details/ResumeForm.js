@@ -1,485 +1,246 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import ReactDOMServer from "react-dom/server";
+import ResumeTemplate from "./ResumeTemp";
+import "bootstrap/dist/css/bootstrap.min.css";
 
-const ResumeBuilder = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    contact: '',
-    address: '',
-    language: '',
-    interest: '',
-    skill: '',
-    linkedin: '',
-    github: '',
-    instagram: '',
-    objective: '',
-    title: '',
-    profilePic: null,
-    experience: [{ position: '', company: '', duration: '', present: false }],
-    education: [{ course: '', college: '', percentage: '', duration: '', present: false }],
-    projects: [{ title: '', description: '' }],
-    certificates: [{ title: '', description: '', date: '' }]
+function ResumeForm() {
+  const [form_data, set_form_data] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    experience: "",
+    education: "",
+    skills: "",
+    projects: "",
+    resume_id: null, // unique ID for each resume
   });
 
+  const [resumes, setResumes] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [isUpdate, setIsUpdate] = useState(false);
+
+  useEffect(() => {
+    axios
+      .get("http://localhost/resume_builder/resume_details/index.php")
+      .then((response) => {
+        if (response.data && response.data.data) {
+          setResumes(response.data.data); // Assuming 'data' holds resume records array
+        }
+      })
+      .catch((error) => console.error("Error fetching resumes:", error));
+  }, []);
+
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    if (type === 'checkbox') {
-      setFormData({
-        ...formData,
-        [name]: checked
-      });
-    } else if (e.target.type === 'file') {
-      setFormData({
-        ...formData,
-        profilePic: e.target.files[0]
-      });
-    } else {
-      setFormData({
-        ...formData,
-        [name]: value
-      });
-    }
-  };
-
-  const addExperienceField = () => {
-    setFormData({
-      ...formData,
-      experience: [...formData.experience, { position: '', company: '', duration: '', present: false }]
-    });
-  };
-
-  const removeExperienceField = (index) => {
-    const updatedExperience = formData.experience.filter((_, i) => i !== index);
-    setFormData({
-      ...formData,
-      experience: updatedExperience
-    });
-  };
-
-  const addEducationField = () => {
-    setFormData({
-      ...formData,
-      education: [...formData.education, { course: '', college: '', percentage: '', duration: '', present: false }]
-    });
-  };
-
-  const removeEducationField = (index) => {
-    const updatedEducation = formData.education.filter((_, i) => i !== index);
-    setFormData({
-      ...formData,
-      education: updatedEducation
-    });
-  };
-
-  const addProjectField = () => {
-    setFormData({
-      ...formData,
-      projects: [...formData.projects, { title: '', description: '' }]
-    });
-  };
-
-  const removeProjectField = (index) => {
-    const updatedProjects = formData.projects.filter((_, i) => i !== index);
-    setFormData({
-      ...formData,
-      projects: updatedProjects
-    });
-  };
-
-  const addCertificateField = () => {
-    setFormData({
-      ...formData,
-      certificates: [...formData.certificates, { title: '', description: '', date: '' }]
-    });
-  };
-
-  const removeCertificateField = (index) => {
-    const updatedCertificates = formData.certificates.filter((_, i) => i !== index);
-    setFormData({
-      ...formData,
-      certificates: updatedCertificates
-    });
+    const { name, value } = e.target;
+    set_form_data((form_data) => ({
+      ...form_data,
+      [name]: value,
+    }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Handle form submission logic here (e.g., sending data to the backend)
-    console.log(formData);
+    const requestMethod = form_data.resume_id ? "PUT" : "POST";
+
+    axios({
+      method: requestMethod,
+      url: "http://localhost/resume_builder/resume_details/index.php",
+      data: form_data,
+    })
+      .then((response) => {
+        const resp_data = response.data;
+
+        if (resp_data && resp_data.data) {
+          if (requestMethod === "POST") {
+            setResumes((resumes) => [...resumes, resp_data.data]);
+          } else if (requestMethod === "PUT") {
+            setResumes((resumes) =>
+              resumes.map((r) =>
+                r.resume_id === form_data.resume_id ? resp_data.data : r
+              )
+            );
+          }
+          closeModal();
+        }
+      })
+      .catch((error) => {
+        console.error("Error submitting the form:", error);
+      });
+  };
+
+  const handleUpdate = (resume) => {
+    set_form_data({
+      ...resume, // Populate form with existing data
+    });
+    setIsUpdate(true);
+    setShowModal(true);
+  };
+
+  const handleDelete = (resume) => {
+    if (window.confirm(`Are you sure you want to delete this resume?`)) {
+      axios
+        .delete(`http://localhost/resume_builder/resume_details/index.php?resume_id=${resume.resume_id}`)
+        .then(() => {
+          setResumes((prevResumes) =>
+            prevResumes.filter((r) => r.resume_id !== resume.resume_id)
+          );
+          console.log("Resume Deleted:", resume);
+        })
+        .catch((error) => {
+          console.error("Error deleting resume:", error);
+        });
+    }
+  };
+
+  const handleView = (resume) => {
+    const newTab = window.open("", "_blank");
+    newTab.document.write("<!DOCTYPE html><html><head><title>Resume</title></head><body></body></html>");
+  
+    newTab.document.body.innerHTML = `<div id="resume-root"></div>`;
+  
+    const resumeDataScript = document.createElement("script");
+    resumeDataScript.innerHTML = `
+      window.resumeData = ${JSON.stringify(resume)};
+      setTimeout(() => {
+        const container = document.getElementById("resume-root");
+        container.innerHTML = ReactDOMServer.renderToString(
+          <ResumeTemplate resume={window.resumeData} />
+        );
+      }, 100);
+    `;
+  
+    newTab.document.head.appendChild(resumeDataScript);
+  };
+
+  const openModal = () => {
+    set_form_data({
+      name: "",
+      email: "",
+      phone: "",
+      address: "",
+      experience: "",
+      education: "",
+      skills: "",
+      projects: "",
+      resume_id: null,
+    });
+    setIsUpdate(false);
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    set_form_data({
+      name: "",
+      email: "",
+      phone: "",
+      address: "",
+      experience: "",
+      education: "",
+      skills: "",
+      projects: "",
+      resume_id: null,
+    });
   };
 
   return (
-    <div className="container" id="form_Container">
-      <h1 className="text-center my-2">Resume Builder</h1>
-      <h3 className="text-center my-2">Fill your details</h3>
-      <form onSubmit={handleSubmit} encType="multipart/form-data">
-        <div className="row">
-          <div id="personal_info" className="col-md-6">
-            <h4 className="text-center">Personal Information</h4>
-            <div className="form-group mt-2">
-              <label htmlFor="name">Name</label>
-              <input
-                type="text"
-                required
-                className="form-control"
-                id="name"
-                name="name"
-                placeholder="Enter your full name"
-                value={formData.name}
-                onChange={handleChange}
-              />
-            </div>
+    <div>
+      <h2>Resume Details</h2>
+      <button className="btn btn-primary" onClick={openModal}>
+        Add Resume
+      </button>
 
-            <div className="form-group mt-2">
-              <label htmlFor="email">Email address</label>
-              <input
-                type="email"
-                required
-                className="form-control"
-                id="email"
-                name="email"
-                placeholder="Enter your email"
-                value={formData.email}
-                onChange={handleChange}
-              />
-              <small id="emailHelp" className="form-text text-muted">
-                We'll never share your email with anyone else.
-              </small>
-            </div>
-
-            <div className="form-group mt-2">
-              <label htmlFor="contact">Contact</label>
-              <input
-                type="number"
-                required
-                className="form-control"
-                id="contact"
-                name="contact"
-                placeholder="Enter your phone number"
-                value={formData.contact}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="form-group mt-2">
-              <label htmlFor="address">Address</label>
-              <textarea
-                name="address"
-                required
-                className="form-control"
-                id="address"
-                placeholder="Enter your address"
-                value={formData.address}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="form-group language_field mt-2">
-              <label>Languages</label>
-              <input
-                type="text"
-                className="form-control form-control-sm"
-                name="language"
-                placeholder="Enter your languages separated by commas not spaces!"
-                value={formData.language}
-                onChange={handleChange}
-              />
-              <small className="form-text text-muted">Hindi,English</small>
-            </div>
-
-            <div className="form-group interest_field mt-2">
-              <label>Interests</label>
-              <input
-                type="text"
-                className="form-control form-control-sm"
-                name="interest"
-                placeholder="Enter your interests separated by commas not spaces!"
-                value={formData.interest}
-                onChange={handleChange}
-              />
-              <small className="form-text text-muted">Reading Books,Listening Music</small>
-            </div>
-
-            <div className="form-group skill_field mt-2">
-              <label>Skills</label>
-              <input
-                type="text"
-                className="form-control form-control-sm"
-                name="skill"
-                placeholder="Enter your skills separated by commas not spaces!"
-                value={formData.skill}
-                onChange={handleChange}
-              />
-              <small className="form-text text-muted">PHP,jquery,HTML</small>
-            </div>
-
-            <p className="secondary-text mt-2">Important Links</p>
-
-            <div className="form-group mt-2">
-              <label htmlFor="linkedin">Linkedin</label>
-              <input
-                type="text"
-                className="form-control"
-                id="linkedin"
-                name="linkedin"
-                value={formData.linkedin}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="form-group mt-2">
-              <label htmlFor="github">GitHub</label>
-              <input
-                type="text"
-                className="form-control"
-                id="github"
-                name="github"
-                value={formData.github}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="form-group mt-2">
-              <label htmlFor="instagram">Instagram</label>
-              <input
-                type="text"
-                className="form-control"
-                id="instagram"
-                name="instagram"
-                value={formData.instagram}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
-
-          <div id="professional_info" className="col-md-6">
-            <h4 className="text-center">Professional Information</h4>
-
-            <div className="form-group mt-2">
-              <label htmlFor="objective">Career Objective</label>
-              <textarea
-                name="objective"
-                required
-                className="form-control"
-                id="objective"
-                value={formData.objective}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="form-group mt-2">
-              <label htmlFor="title">Title</label>
-              <input
-                type="text"
-                required
-                className="form-control"
-                id="title"
-                name="title"
-                placeholder="Enter your title"
-                value={formData.title}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="form-group mt-2">
-              <label className="form-label" htmlFor="profilePic">
-                Profile Picture
-              </label>
-              <input
-                type="file"
-                accept="image/*"
-                className="form-control"
-                id="profilePic"
-                name="profilePic"
-                onChange={handleChange}
-              />
-            </div>
-
-            <h5 className="mt-2">Work Experience</h5>
-            <div className="form-group" id="experience">
-              {formData.experience.map((experience, index) => (
-                <div className="experience_field mt-3" key={index}>
-                  <button
-                    className="btn btn-outline-danger btn-sm float-end remove_field mb-2"
-                    type="button"
-                    onClick={() => removeExperienceField(index)}
-                    title="remove experience field"
-                  >
-                    Remove
-                  </button>
-                  <div className="form-group">
-                    <label>Position</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      name="position"
-                      value={experience.position}
-                      onChange={(e) => {
-                        const updatedExperience = [...formData.experience];
-                        updatedExperience[index].position = e.target.value;
-                        setFormData({ ...formData, experience: updatedExperience });
-                      }}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Company</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      name="company"
-                      value={experience.company}
-                      onChange={(e) => {
-                        const updatedExperience = [...formData.experience];
-                        updatedExperience[index].company = e.target.value;
-                        setFormData({ ...formData, experience: updatedExperience });
-                      }}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Duration</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      name="duration"
-                      value={experience.duration}
-                      onChange={(e) => {
-                        const updatedExperience = [...formData.experience];
-                        updatedExperience[index].duration = e.target.value;
-                        setFormData({ ...formData, experience: updatedExperience });
-                      }}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>
-                      Present:
-                      <input
-                        type="checkbox"
-                        className="form-check-input"
-                        name="present"
-                        checked={experience.present}
-                        onChange={(e) => {
-                          const updatedExperience = [...formData.experience];
-                          updatedExperience[index].present = e.target.checked;
-                          setFormData({ ...formData, experience: updatedExperience });
-                        }}
-                      />
-                    </label>
-                  </div>
-                </div>
+      {/* Resume Grid */}
+      <div className="resume-grid">
+        {/* <h3>Submitted Resumes:</h3> */}
+        {resumes.length > 0 ? (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Address</th>
+                <th>Experience</th>
+                <th>Education</th>
+                <th>Skills</th>
+                <th>Projects</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {resumes.map((resume, index) => (
+                <tr key={index}>
+                  <td>{resume.name}</td>
+                  <td>{resume.email}</td>
+                  <td>{resume.phone}</td>
+                  <td>{resume.address}</td>
+                  <td>{resume.experience}</td>
+                  <td>{resume.education}</td>
+                  <td>{resume.skills}</td>
+                  <td>{resume.projects}</td>
+                  <td>
+                    <button className="btn btn-secondary" onClick={() => handleUpdate(resume)}>
+                      Edit
+                    </button>
+                    <button className="btn btn-danger" onClick={() => handleDelete(resume)}>
+                      Delete
+                    </button>
+                    <button className="btn btn-info" onClick={() => handleView(resume)}>
+    View
+  </button>
+                  </td>
+                </tr>
               ))}
-              <button
-                type="button"
-                className="btn btn-outline-primary btn-sm my-2"
-                onClick={addExperienceField}
-              >
-                Add Experience
-              </button>
-            </div>
+            </tbody>
+          </table>
+        ) : (
+          <p>No resumes submitted yet.</p>
+        )}
+      </div>
 
-            <h5 className="mt-2">Education</h5>
-            <div className="form-group" id="education">
-              {formData.education.map((education, index) => (
-                <div className="education_field mt-3" key={index}>
-                  <button
-                    className="btn btn-outline-danger btn-sm float-end remove_field mb-2"
-                    type="button"
-                    onClick={() => removeEducationField(index)}
-                    title="remove education field"
-                  >
-                    Remove
-                  </button>
-                  <div className="form-group">
-                    <label>Course</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      name="course"
-                      value={education.course}
-                      onChange={(e) => {
-                        const updatedEducation = [...formData.education];
-                        updatedEducation[index].course = e.target.value;
-                        setFormData({ ...formData, education: updatedEducation });
-                      }}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>College</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      name="college"
-                      value={education.college}
-                      onChange={(e) => {
-                        const updatedEducation = [...formData.education];
-                        updatedEducation[index].college = e.target.value;
-                        setFormData({ ...formData, education: updatedEducation });
-                      }}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Percentage</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      name="percentage"
-                      value={education.percentage}
-                      onChange={(e) => {
-                        const updatedEducation = [...formData.education];
-                        updatedEducation[index].percentage = e.target.value;
-                        setFormData({ ...formData, education: updatedEducation });
-                      }}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Duration</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      name="duration"
-                      value={education.duration}
-                      onChange={(e) => {
-                        const updatedEducation = [...formData.education];
-                        updatedEducation[index].duration = e.target.value;
-                        setFormData({ ...formData, education: updatedEducation });
-                      }}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>
-                      Present:
+      {/* Modal for Add and Update */}
+      {showModal && (
+        <div className="modal fade show" style={{ display: "block" }} tabIndex="-1" role="dialog" aria-labelledby="modalLabel" aria-hidden="true">
+          <div className="modal-dialog modal-lg" role="document">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title" id="modalLabel">
+                  {form_data.resume_id ? "Update Resume" : "Add Resume"}
+                </h5>
+                <button type="button" className="close" onClick={closeModal} aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div className="modal-body">
+                <form onSubmit={handleSubmit}>
+                  {/* Form Fields */}
+                  {["name", "email", "phone", "address", "experience", "education", "skills", "projects"].map((field) => (
+                    <div className="form-group" key={field}>
+                      <label>{field.charAt(0).toUpperCase() + field.slice(1)}:</label>
                       <input
-                        type="checkbox"
-                        className="form-check-input"
-                        name="present"
-                        checked={education.present}
-                        onChange={(e) => {
-                          const updatedEducation = [...formData.education];
-                          updatedEducation[index].present = e.target.checked;
-                          setFormData({ ...formData, education: updatedEducation });
-                        }}
+                        type="text"
+                        name={field}
+                        value={form_data[field]}
+                        onChange={handleChange}
+                        className="form-control"
+                        required
                       />
-                    </label>
-                  </div>
-                </div>
-              ))}
-              <button
-                type="button"
-                className="btn btn-outline-primary btn-sm my-2"
-                onClick={addEducationField}
-              >
-                Add Education
-              </button>
+                    </div>
+                  ))}
+                  <button type="submit" className="btn btn-primary">
+                    {form_data.resume_id ? "Update" : "Submit"}
+                  </button>
+                </form>
+              </div>
             </div>
-          </div>
-
-          <div className="col-md-12 text-center mt-4">
-            <button type="submit" className="btn btn-success my-3">
-              Submit
-            </button>
           </div>
         </div>
-      </form>
+      )}
     </div>
   );
-};
+}
 
-export default ResumeBuilder;
+export default ResumeForm;

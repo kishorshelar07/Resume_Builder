@@ -1,0 +1,38 @@
+/* ResumeTemplate.css */
+.resume-template {
+    max-width: 800px;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #ddd;
+    font-family: Arial, sans-serif;
+    color: #333;
+  }
+  
+  .resume-header {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  .resume-header h1 {
+    margin: 0;
+    font-size: 2em;
+  }
+  
+  .resume-header p {
+    margin: 5px 0;
+  }
+  
+  .resume-section {
+    margin-top: 20px;
+  }
+  
+  .resume-section h2 {
+    font-size: 1.5em;
+    color: #007bff;
+  }
+  
+  .resume-section p {
+    margin: 10px 0;
+    line-height: 1.6;
+  }
+  
