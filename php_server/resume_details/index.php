@@ -1,138 +1,124 @@
 <?php
-include '../db_connect.php'; // Ensure this file sets up $conn
+include '../db_connect.php';
 
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json; charset=UTF-8');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With');
 
-// Handle different HTTP methods (GET, POST, PUT, DELETE)
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit();
+}
+
+$resp_data = ["message" => "No data received", "data" => null];
 $method = $_SERVER['REQUEST_METHOD'];
 
-switch ($method) {
-    case 'GET':
-        getResumeDetails($conn);
-        break;
-
-    case 'POST':
-        addResumeDetails($conn);
-        break;
-
-    case 'PUT':
-        updateResumeDetails($conn);
-        break;
-
-    case 'DELETE':
-        deleteResumeDetails($conn);
-        break;
-
-    default:
-        echo json_encode(['status' => 'error', 'message' => 'Invalid HTTP method']);
-}
-
-function getResumeDetails($conn) {
-    if (isset($_GET['id'])) {
-        // Fetch a single resume detail by ID
-        $id = mysqli_real_escape_string($conn, $_GET['id']);
-        $query = "SELECT * FROM ResumeDetails WHERE id = $id";
-        $result = mysqli_query($conn, $query);
-        
-        if (mysqli_num_rows($result) > 0) {
-            $data = mysqli_fetch_assoc($result);
-            echo json_encode(['status' => 'success', 'data' => $data]);
-        } else {
-            echo json_encode(['status' => 'error', 'message' => 'Resume not found']);
-        }
+if ($method === 'GET') {
+    $searchQuery = isset($_GET['search']) ? $_GET['search'] : '';
+    if ($searchQuery) {
+        $sql = "SELECT resume_id, name, email, phone, address, experience, education, skills, projects 
+                FROM RESUME 
+                WHERE name LIKE '%$searchQuery%' 
+                OR email LIKE '%$searchQuery%'";
     } else {
-        // Fetch all resume details
-        $query = "SELECT * FROM ResumeDetails";
-        $result = mysqli_query($conn, $query);
-        
+        $sql = "SELECT resume_id, name, email, phone, address, experience, education, skills, projects FROM RESUME";
+    }
+
+    $result = $conn->query($sql);
+
+    if ($result->num_rows > 0) {
         $resumes = [];
-        while ($row = mysqli_fetch_assoc($result)) {
+        while ($row = $result->fetch_assoc()) {
             $resumes[] = $row;
         }
-
-        echo json_encode(['status' => 'success', 'data' => $resumes]);
-    }
-}
-
-function addResumeDetails($conn) {
-    $data = json_decode(file_get_contents("php://input"), true);
-
-    $name = mysqli_real_escape_string($conn, $data['name']);
-    $email = mysqli_real_escape_string($conn, $data['email']);
-    $phone = mysqli_real_escape_string($conn, $data['phone']);
-    $address = mysqli_real_escape_string($conn, $data['address']);
-    $linkedin = mysqli_real_escape_string($conn, $data['linkedin']);
-    $github = mysqli_real_escape_string($conn, $data['github']);
-    $instagram = mysqli_real_escape_string($conn, $data['instagram']);
-    $objective = mysqli_real_escape_string($conn, $data['objective']);
-    $language = mysqli_real_escape_string($conn, $data['language']);
-    $interest = mysqli_real_escape_string($conn, $data['interest']);
-    $skill = mysqli_real_escape_string($conn, $data['skill']);
-    $title = mysqli_real_escape_string($conn, $data['title']);
-
-    $query = "INSERT INTO ResumeDetails (name, email, phone, address, linkedin, github, instagram, objective, language, interest, skill, title)
-              VALUES ('$name', '$email', '$phone', '$address', '$linkedin', '$github', '$instagram', '$objective', '$language', '$interest', '$skill', '$title')";
-
-    if (mysqli_query($conn, $query)) {
-        echo json_encode(['status' => 'success', 'message' => 'Resume added successfully']);
+        echo json_encode(["message" => "Resumes fetched successfully", "data" => $resumes]);
     } else {
-        echo json_encode(['status' => 'error', 'message' => mysqli_error($conn)]);
+        echo json_encode(["message" => "No resumes found", "data" => null]);
     }
+    exit();
 }
 
-function updateResumeDetails($conn) {
-    $data = json_decode(file_get_contents("php://input"), true);
-    $id = mysqli_real_escape_string($conn, $data['id']);
-    $name = mysqli_real_escape_string($conn, $data['name']);
-    $email = mysqli_real_escape_string($conn, $data['email']);
-    $phone = mysqli_real_escape_string($conn, $data['phone']);
-    $address = mysqli_real_escape_string($conn, $data['address']);
-    $linkedin = mysqli_real_escape_string($conn, $data['linkedin']);
-    $github = mysqli_real_escape_string($conn, $data['github']);
-    $instagram = mysqli_real_escape_string($conn, $data['instagram']);
-    $objective = mysqli_real_escape_string($conn, $data['objective']);
-    $language = mysqli_real_escape_string($conn, $data['language']);
-    $interest = mysqli_real_escape_string($conn, $data['interest']);
-    $skill = mysqli_real_escape_string($conn, $data['skill']);
-    $title = mysqli_real_escape_string($conn, $data['title']);
+$data = json_decode(file_get_contents("php://input"));
 
-    $query = "UPDATE ResumeDetails SET
-              name = '$name', 
-              email = '$email', 
-              phone = '$phone', 
-              address = '$address', 
-              linkedin = '$linkedin', 
-              github = '$github', 
-              instagram = '$instagram', 
-              objective = '$objective', 
-              language = '$language', 
-              interest = '$interest', 
-              skill = '$skill', 
-              title = '$title' 
-              WHERE id = $id";
+if ($data) {
+    $name = isset($data->name) ? $data->name : null;
+    $email = isset($data->email) ? $data->email : null;
+    $phone = isset($data->phone) ? $data->phone : null;
+    $address = isset($data->address) ? $data->address : null;
+    $experience = isset($data->experience) ? $data->experience : null;
+    $education = isset($data->education) ? $data->education : null;
+    $skills = isset($data->skills) ? $data->skills : null;
+    $projects = isset($data->projects) ? $data->projects : null;
+    $resume_id = isset($data->resume_id) ? $data->resume_id : null;
 
-    if (mysqli_query($conn, $query)) {
-        echo json_encode(['status' => 'success', 'message' => 'Resume updated successfully']);
-    } else {
-        echo json_encode(['status' => 'error', 'message' => mysqli_error($conn)]);
-    }
-}
+    if ($method === 'POST') {
+        $sql = "INSERT INTO RESUME (name, email, phone, address, experience, education, skills, projects) 
+                VALUES ('$name', '$email', '$phone', '$address', '$experience', '$education', '$skills', '$projects')";
 
-function deleteResumeDetails($conn) {
-    if (isset($_GET['id'])) {
-        $id = mysqli_real_escape_string($conn, $_GET['id']);
-        $query = "DELETE FROM ResumeDetails WHERE id = $id";
-
-        if (mysqli_query($conn, $query)) {
-            echo json_encode(['status' => 'success', 'message' => 'Resume deleted successfully']);
+        if ($conn->query($sql) === TRUE) {
+            $resp_data = [
+                "message" => "Resume added successfully",
+                "data" => [
+                    "resume_id" => $conn->insert_id,
+                    "name" => $name,
+                    "email" => $email,
+                    "phone" => $phone,
+                    "address" => $address,
+                    "experience" => $experience,
+                    "education" => $education,
+                    "skills" => $skills,
+                    "projects" => $projects
+                ]
+            ];
         } else {
-            echo json_encode(['status' => 'error', 'message' => mysqli_error($conn)]);
+            $resp_data = ["message" => "Error inserting data", "data" => null];
+        }
+
+    } elseif ($method === 'PUT' && $resume_id) {
+        $sql = "UPDATE RESUME SET name='$name', email='$email', phone='$phone', address='$address', 
+                experience='$experience', education='$education', skills='$skills', projects='$projects' 
+                WHERE resume_id=$resume_id";
+
+        if ($conn->query($sql) === TRUE) {
+            $resp_data = [
+                "message" => "Resume updated successfully",
+                "data" => [
+                    "resume_id" => $resume_id,
+                    "name" => $name,
+                    "email" => $email,
+                    "phone" => $phone,
+                    "address" => $address,
+                    "experience" => $experience,
+                    "education" => $education,
+                    "skills" => $skills,
+                    "projects" => $projects
+                ]
+            ];
+        } else {
+            $resp_data = ["message" => "Error updating data", "data" => null];
         }
     } else {
-        echo json_encode(['status' => 'error', 'message' => 'ID is required for deletion']);
+        $resp_data = ["message" => "Invalid request", "data" => null];
     }
+
+} elseif ($method === 'DELETE') {
+    $resume_id = isset($_GET['resume_id']) ? intval($_GET['resume_id']) : null;
+
+    if ($resume_id) {
+        $sql = "DELETE FROM RESUME WHERE resume_id = $resume_id";
+
+        if ($conn->query($sql) === TRUE) {
+            $resp_data = ["message" => "Resume deleted successfully"];
+        } else {
+            $resp_data = ["message" => "Error deleting resume", "data" => null];
+        }
+    } else {
+        $resp_data = ["message" => "Resume ID not provided", "data" => null];
+    }
+} else {
+    $resp_data = ["message" => "Unsupported request method", "data" => null];
 }
+
+echo json_encode($resp_data);
 ?>
