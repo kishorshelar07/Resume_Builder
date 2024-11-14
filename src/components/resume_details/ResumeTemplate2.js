@@ -1,7 +1,6 @@
 // ResumeTemplate2.js
 import React from "react";
-import "./ResumeTemp.css"; // Use a different CSS file or add different classes for unique styling
-
+import "./Temp2.css"
 function ResumeTemplate2({ resume }) {
   return (
     <div className="resume-template template-style-2">

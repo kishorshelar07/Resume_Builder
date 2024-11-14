@@ -1,0 +1,86 @@
+/* ResumeTemp.css */
+
+/* Base container */
+.resume-template {
+    font-family: 'Roboto', sans-serif;
+    color: #333;
+    max-width: 900px;
+    margin: 20px auto;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Template Style 3 - Sidebar Layout */
+  .template-style-3 {
+    display: flex;
+    background: #fdfdfd;
+  }
+  
+  /* Sidebar style */
+  .template-style-3 .resume-header {
+    background-color: #2a4365;
+    color: #f9fafb;
+    padding: 20px;
+    width: 250px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+  }
+  
+  .template-style-3 .resume-header h1 {
+    font-size: 1.8em;
+    margin: 0;
+    color: #e2e8f0;
+  }
+  
+  .template-style-3 .resume-header p {
+    font-size: 0.9em;
+    margin: 10px 0 0;
+    color: #cbd5e0;
+  }
+  
+  /* Main Content */
+  .template-style-3 .resume-content {
+    padding: 30px;
+    width: calc(100% - 250px);
+  }
+  
+  .template-style-3 .resume-content div {
+    margin-bottom: 20px;
+    padding: 15px;
+    border-left: 3px solid #2a4365;
+  }
+  
+  .template-style-3 .resume-content h4 {
+    font-size: 1.2em;
+    color: #2a4365;
+    margin-bottom: 5px;
+  }
+  
+  .template-style-3 .resume-content p {
+    font-size: 1em;
+    color: #4a5568;
+    line-height: 1.5;
+  }
+  
+  /* Optional additional styling */
+  .template-style-3 .resume-content div:last-child {
+    margin-bottom: 0;
+  }
+  
+  .template-style-3 .resume-content p::before {
+    content: '• ';
+    color: #2a4365;
+    margin-right: 5px;
+  }
+  
+  .template-style-3 .resume-content h4::after {
+    content: '';
+    display: block;
+    width: 30px;
+    border-bottom: 2px solid #2a4365;
+    margin-top: 5px;
+  }
+  

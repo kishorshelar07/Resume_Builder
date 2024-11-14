@@ -1,7 +1,6 @@
 // ResumeTemplate3.js
 import React from "react";
-import "./ResumeTemp.css"; // Use unique styling for template 3
-
+import "./Temp3.css"
 function ResumeTemplate3({ resume }) {
   return (
     <div className="resume-template template-style-3">
