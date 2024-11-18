@@ -1,79 +1,104 @@
-// Import necessary libraries and components
 import React, { useState } from "react";
-import ResumeTemplate from "./ResumeTemp";         // Import first resume template component
-import ResumeTemplate2 from "./ResumeTemplate2";   // Import second resume template component
-import ResumeTemplate3 from "./ResumeTemplete3";   // Import third resume template component
-import "bootstrap/dist/css/bootstrap.min.css";     // Import Bootstrap CSS for styling
+import axios from "axios"; // Axios for HTTP requests
+import ResumeTemplate from "./ResumeTemp";
+import ResumeTemplate2 from "./ResumeTemplate2";
+import ResumeTemplate3 from "./ResumeTemplete3";
+import "bootstrap/dist/css/bootstrap.min.css";
 
-// Define ResumeForm component
 function ResumeForm() {
-  // State to track selected resume template; default is "template1"
   const [selectedTemplate, setSelectedTemplate] = useState("template1");
 
-  // State to store form data entered by user
   const [form_data, set_form_data] = useState({
-    name: "",         // User's name
-    email: "",        // User's email address
-    phone: "",        // User's phone number
-    address: "",      // User's address
-    experience: "",   // User's work experience
-    education: "",    // User's education background
-    skills: "",       // User's skills
-    projects: ""      // User's project experience
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    experience: "",
+    education: "",
+    skills: "",
+    projects: "",
   });
 
-  // Function to update selected template based on user's choice
+  const [loading, setLoading] = useState(false); // To show a loading state
+
   const handleTemplateSelect = (template) => {
-    setSelectedTemplate(template); // Update selected template
+    setSelectedTemplate(template);
   };
 
-  // Function to handle changes in form inputs
   const handleChange = (e) => {
-    const { name, value } = e.target;             // Destructure name and value from event target
-    set_form_data((form_data) => ({               // Update form_data state
-      ...form_data,                               // Keep existing form data
-      [name]: value,                              // Update the field that changed
+    const { name, value } = e.target;
+    set_form_data((form_data) => ({
+      ...form_data,
+      [name]: value,
     }));
   };
 
-  // Function to render the selected resume template component
+  // Function to submit form data to the database
+  const handleSubmit = async (e) => {
+    e.preventDefault(); // Prevent default form submission
+    setLoading(true); // Show loading indicator
+    try {
+      const response = await axios.post(
+        "http://localhost/resume_builder/resume_details/index.php", // Replace with your API endpoint
+        JSON.stringify(form_data), // Send serialized data as JSON
+        {
+          headers: {
+            "Content-Type": "application/json", // Set content type
+          },
+        }
+      );
+
+      if (response.data.success) {
+        alert("Resume data saved successfully!");
+      } else {
+        alert("Failed to save resume data.");
+      }
+    } catch (error) {
+      console.error("Error saving resume data:", error);
+      alert("An error occurred while saving the data.");
+    } finally {
+      setLoading(false); // Hide loading indicator
+    }
+  };
+
   const renderTemplate = () => {
     switch (selectedTemplate) {
-      case "template2":                           // If template2 is selected
-        return <ResumeTemplate2 resume={form_data} />; // Render ResumeTemplate2 with form_data
-      case "template3":                           // If template3 is selected
-        return <ResumeTemplate3 resume={form_data} />; // Render ResumeTemplate3 with form_data
-      default:                                    // Default template is template1
-        return <ResumeTemplate resume={form_data} />;  // Render ResumeTemplate with form_data
+      case "template2":
+        return <ResumeTemplate2 resume={form_data} />;
+      case "template3":
+        return <ResumeTemplate3 resume={form_data} />;
+      default:
+        return <ResumeTemplate resume={form_data} />;
     }
   };
 
   return (
-    <div className="d-flex">                      {/* Flex container for layout */}
-      <div className="form-container">            {/* Container for form and buttons */}
-        <h2>Resume Details</h2>                   {/* Header for the form */}
-        
-        {/* Form to collect user resume data */}
-        <form>
-          {/* Loop through each field in form_data and generate input field */}
+    <div className="d-flex">
+      <div className="form-container">
+        <h2>Resume Details</h2>
+
+        <form onSubmit={handleSubmit}>
           {["name", "email", "phone", "address", "experience", "education", "skills", "projects"].map((field) => (
-            <div className="form-group" key={field}> {/* Form group for each input field */}
-              <label>{field.charAt(0).toUpperCase() + field.slice(1)}:</label> {/* Label for the input */}
+            <div className="form-group" key={field}>
+              <label>{field.charAt(0).toUpperCase() + field.slice(1)}:</label>
               <input
-                type="text"                       // Input type is text
-                name={field}                      // Name attribute matches field key
-                value={form_data[field]}          // Bind value to form_data state
-                onChange={handleChange}           // Update form_data on change
-                className="form-control"          // Bootstrap styling
-                required                          // Make input required
+                type="text"
+                name={field}
+                value={form_data[field]}
+                onChange={handleChange}
+                className="form-control"
+                required
               />
             </div>
           ))}
+
+          {/* Submit button to save data */}
+          <button type="submit" className="btn btn-primary mt-3" disabled={loading}>
+            {loading ? "Saving..." : "Save Resume"}
+          </button>
         </form>
 
-        <h3>Select Template</h3>                  {/* Header for template selection */}
-        
-        {/* Buttons to select different resume templates */}
+        <h3>Select Template</h3>
         <div className="d-flex">
           <button onClick={() => handleTemplateSelect("template1")} className="btn btn-outline-primary m-1">
             Template 1
@@ -87,11 +112,9 @@ function ResumeForm() {
         </div>
       </div>
 
-      <div className="template-preview">           {/* Container for template preview */}
-        {renderTemplate()}                         {/* Render selected resume template */}
-      </div>
+      <div className="template-preview">{renderTemplate()}</div>
     </div>
   );
 }
 
-export default ResumeForm;                           // Export ResumeForm component as default
+export default ResumeForm;

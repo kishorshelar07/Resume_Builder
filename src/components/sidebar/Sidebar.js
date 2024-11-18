@@ -65,7 +65,7 @@ function Sidebar() {
               onClick={toggleSidebar}
             >
               <i className="fas fa-align-left"></i>
-              <span><i class="bi bi-layout-text-sidebar"></i></span>
+              <span><i className="bi bi-layout-text-sidebar"></i></span>
             </button>
             <button
               className="btn btn-dark d-inline-block d-lg-none ml-auto"

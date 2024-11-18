@@ -53,11 +53,14 @@ if ($data) {
     $resume_id = isset($data->resume_id) ? $data->resume_id : null;
 
     if ($method === 'POST') {
+        // Prepare SQL query
         $sql = "INSERT INTO RESUME (name, email, phone, address, experience, education, skills, projects) 
                 VALUES ('$name', '$email', '$phone', '$address', '$experience', '$education', '$skills', '$projects')";
-
+    
+        // Execute query
         if ($conn->query($sql) === TRUE) {
             $resp_data = [
+                "success" => true, // Add this key
                 "message" => "Resume added successfully",
                 "data" => [
                     "resume_id" => $conn->insert_id,
@@ -72,10 +75,18 @@ if ($data) {
                 ]
             ];
         } else {
-            $resp_data = ["message" => "Error inserting data", "data" => null];
+            $resp_data = [
+                "success" => false, // Add this key
+                "message" => "Error inserting data: " . $conn->error,
+                "data" => null
+            ];
         }
-
-    } elseif ($method === 'PUT' && $resume_id) {
+    
+        // Return response
+        echo json_encode($resp_data);
+        exit();
+    }
+     elseif ($method === 'PUT' && $resume_id) {
         $sql = "UPDATE RESUME SET name='$name', email='$email', phone='$phone', address='$address', 
                 experience='$experience', education='$education', skills='$skills', projects='$projects' 
                 WHERE resume_id=$resume_id";
