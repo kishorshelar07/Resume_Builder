@@ -1,13 +1,11 @@
 import React, { useState } from "react";
-import axios from "axios"; // Axios for HTTP requests
+import axios from "axios";
 import ResumeTemplate from "./ResumeTemp";
 import ResumeTemplate2 from "./ResumeTemplate2";
 import ResumeTemplate3 from "./ResumeTemplete3";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 function ResumeForm() {
-  const [selectedTemplate, setSelectedTemplate] = useState("template1");
-
   const [form_data, set_form_data] = useState({
     name: "",
     email: "",
@@ -20,10 +18,8 @@ function ResumeForm() {
   });
 
   const [loading, setLoading] = useState(false); // To show a loading state
-
-  const handleTemplateSelect = (template) => {
-    setSelectedTemplate(template);
-  };
+  const [saved, setSaved] = useState(false); // Track if data has been saved
+  const [selectedTemplate, setSelectedTemplate] = useState(null); // Track selected template
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -35,21 +31,22 @@ function ResumeForm() {
 
   // Function to submit form data to the database
   const handleSubmit = async (e) => {
-    e.preventDefault(); // Prevent default form submission
-    setLoading(true); // Show loading indicator
+    e.preventDefault();
+    setLoading(true);
     try {
       const response = await axios.post(
-        "http://localhost/resume_builder/resume_details/index.php", // Replace with your API endpoint
-        JSON.stringify(form_data), // Send serialized data as JSON
+        "http://localhost/resume_builder/resume_details/index.php",
+        JSON.stringify(form_data),
         {
           headers: {
-            "Content-Type": "application/json", // Set content type
+            "Content-Type": "application/json",
           },
         }
       );
 
       if (response.data.success) {
         alert("Resume data saved successfully!");
+        setSaved(true); // Indicate data is saved
       } else {
         alert("Failed to save resume data.");
       }
@@ -57,18 +54,20 @@ function ResumeForm() {
       console.error("Error saving resume data:", error);
       alert("An error occurred while saving the data.");
     } finally {
-      setLoading(false); // Hide loading indicator
+      setLoading(false);
     }
   };
 
   const renderTemplate = () => {
     switch (selectedTemplate) {
+      case "template1":
+        return <ResumeTemplate resume={form_data} />;
       case "template2":
         return <ResumeTemplate2 resume={form_data} />;
       case "template3":
         return <ResumeTemplate3 resume={form_data} />;
       default:
-        return <ResumeTemplate resume={form_data} />;
+        return null;
     }
   };
 
@@ -92,24 +91,36 @@ function ResumeForm() {
             </div>
           ))}
 
-          {/* Submit button to save data */}
           <button type="submit" className="btn btn-primary mt-3" disabled={loading}>
             {loading ? "Saving..." : "Save Resume"}
           </button>
         </form>
 
-        <h3>Select Template</h3>
-        <div className="d-flex">
-          <button onClick={() => handleTemplateSelect("template1")} className="btn btn-outline-primary m-1">
-            Template 1
-          </button>
-          <button onClick={() => handleTemplateSelect("template2")} className="btn btn-outline-secondary m-1">
-            Template 2
-          </button>
-          <button onClick={() => handleTemplateSelect("template3")} className="btn btn-outline-success m-1">
-            Template 3
-          </button>
-        </div>
+        {saved && (
+          <div>
+            <h3>Select Template</h3>
+            <div className="d-flex">
+              <button
+                onClick={() => setSelectedTemplate("template1")}
+                className="btn btn-outline-primary m-1"
+              >
+                Template 1
+              </button>
+              <button
+                onClick={() => setSelectedTemplate("template2")}
+                className="btn btn-outline-secondary m-1"
+              >
+                Template 2
+              </button>
+              <button
+                onClick={() => setSelectedTemplate("template3")}
+                className="btn btn-outline-success m-1"
+              >
+                Template 3
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="template-preview">{renderTemplate()}</div>
